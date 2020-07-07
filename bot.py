@@ -14,10 +14,6 @@ class MyClient(discord.Client):
 
     async def on_message(self, message):
         if message.author.bot == False:
-            if message.content.startswith("o>omhhunt-w5XzNXA7rF8CLzCS"):
-                channel = client.get_channel(message.channel.id) 
-                user = client.get_user(message.author.id)
-                await user.send("https://omhwebhunt-dqjF5Fzd.hubza.co.uk")
             if message.content.startswith("o>user"):
 
 
