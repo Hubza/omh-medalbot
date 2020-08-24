@@ -36,18 +36,13 @@ class MyClient(discord.Client):
                     await message.channel.send("oioi")
                 if atype is 5:
                     await message.channel.send("whats up")
+
             if message.content.startswith("tell me a joke"):
-               
                 lines = open("jokes.txt").read().splitlines()
                 random_line = random.choice(lines)
                 await message.channel.send(random_line)
-            if message.content.startswith("o>omhhunt-w5XzNXA7rF8CLzCS"):
-                channel = client.get_channel(message.channel.id) 
-                user = client.get_user(message.author.id)
-                await user.send("https://omhwebhunt-dqjF5Fzd.hubza.co.uk")
+
             if message.content.startswith("o>user"):
-
-
                 channel = client.get_channel(message.channel.id) 
 
                 embed = discord.Embed(title="Please wait.", description="Loading Info" , color=0x002200) 
