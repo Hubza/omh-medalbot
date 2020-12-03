@@ -1,8 +1,12 @@
 import discord
 from discord.ext.commands import Bot
+from discord.ext import commands
 import re # regex
 import requests # for grabbing apis
 import sys
+import os
+import ftfy
+import socket
 
 users = [233170527458426880, 338688617033498624, 100295345086402560] 
 # check if user is in the admin list
@@ -21,31 +25,48 @@ async def on_ready():
     print(f'Bot connected as {client.user}')
     game = discord.Game("osu! | o>help")
     await client.change_presence(status=discord.Status.dnd, activity=game)
+    
         
 @client.event
 async def on_message(message):
     if message.author.bot == False:
+        if message.content.startswith("who is " + client.user.name) or message.content.startswith("o>reportallbots"):
+            await message.channel.send("I'm " + client.user.name + " running on " + str(socket.gethostname()) + "\n" + "`PROCESS ID` : `" + str(os.getpid()) + "`\n`PARENT ID` : `" + str(os.getppid()) + "`\n`LOCATION` : `" + os.path.realpath(__file__) + "`")
         if message.content.startswith(prefix + 'send'):
-            print(message.author.name + " is running " + message.content)
+            await ran(message)
             await send(message)
+        if message.content.startswith(prefix + 'restart'):
+            await ran(message)
+            await restart(message)
         if message.content.startswith(prefix + 'medal'):
-            print(message.author.name + " is running " + message.content)
+            try:
+                await ran(message)
+            except:
+                await message.channel.send("Unexpected error:" + str(sys.exc_info()[0]))
             await medal(message)
         if message.content.startswith(prefix + 'user'):
-            print(message.author.name + " is running " + message.content)
+            await ran(message)
             await user(message)
         if message.content.startswith(prefix + 'help'):
-            print(message.author.name + " is running " + message.content)
+            await ran(message)
             await help(message)
         if message.content.startswith(prefix + 'invite'):
-            print(message.author.name + " is running " + message.content)
+            await ran(message)
             await invite(message)
         if message.content.startswith(prefix + 'stats'):
-            print(message.author.name + " is running " + message.content)
+            await ran(message)
             await stats(message)
         if message.content.startswith(prefix + 'about'):
-            print(message.author.name + " is running " + message.content)
+            await ran(message)
             await about(message)
+        if message.content.startswith(prefix + 'maps'):
+            await ran(message)
+            await maps(message)
+
+# get server stats
+@client.event
+async def ran(message):
+    print(message.author.name + " is running " + message.content + " in " + message.guild.name)
 
 # send help
 @client.event
@@ -85,7 +106,7 @@ async def stats(message):
 async def about(message):
     channel = client.get_channel(message.channel.id) 
     embed = discord.Embed(title="About omh!medalbot", description="All about omh!medalbot and what it does!" , color=0x00CCFF)
-    embed.add_field(name="About", value="omh!medalbot is an osu! Discord bot which provides many commands, such as users and medals.\n\nIt mainly revolves around the medals/achivements of osu! and shows global medal rank and information about medals and how to pass them.\n\nThis project is made by the osu! Medal Hunters and Osekai team.\nhttps://discord.gg/8qpNTs6\nhttps://www.osekai.net\n\nDeveloped by Hubz, https://www.hubza.co.uk", inline=False) 
+    embed.add_field(name="About", value="omh!medalbot is an osu! Discord bot which provides many commands, such as users and medals.\n\nIt mainly revolves around the medals/achivements of osu! and shows global medal rank and information about medals and how to pass them.\n\nThis project is made possible by the osu! Medal Hunters and Osekai team.\nhttps://discord.gg/8qpNTs6\nhttps://www.osekai.net\n\nDeveloped by Hubz, https://www.hubza.co.uk", inline=False) 
     embedtoedit = await channel.send(embed=embed) 
 
 # send message
@@ -96,12 +117,17 @@ async def send(message):
         result = str(result)
         result = str(result).replace('"', "")  
         
-        wantedchannel = re.search('<(.*)>', message.content).group(0)
-        wantedchannel = str(wantedchannel).replace("<", "")
-        wantedchannel = str(wantedchannel).replace(">", "")  
+        wantedchannel = re.search('{(.*)}', message.content).group(0)
+        wantedchannel = str(wantedchannel).replace("{", "")
+        wantedchannel = str(wantedchannel).replace("}", "")  
         
         channel = client.get_channel(int(wantedchannel))
         await channel.send(result)
+        
+@client.event
+async def restart(message):
+    if admin(message) == True:
+        os.system("systemctl restart omhbot")
         
 # get user from osekai and osu
 
@@ -172,7 +198,7 @@ async def user(message):
             if mode == "mania":
                 mode = "osu!mania"
 
-            a = medals / 233 * 100
+            a = medals / 257 * 100
             a=a*100
             a=int(a)
             a=a/100.00
@@ -205,12 +231,13 @@ async def medal(message):
 
         url = 'https://osekai.net/medals/api?medal=' + uid
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246',
+            'Content-Type': 'text/html; charset=iso-8859-1'
         }
         cookies = requests.head(url)
         r = requests.get(url, headers=headers, allow_redirects=True, cookies=cookies)
-        content = str(r.content)
-        content = content.replace('\\xc3\\xa4','a')
+        content = ftfy.fix_encoding(str(r.content))
+
         embed = discord.Embed(title="Please wait..", description="Loaded medal info!", color=0x006600) 
     
         if "medal" in content:
@@ -243,10 +270,12 @@ async def medal(message):
             else:
                 embed = discord.Embed(title="This medal was not found!", description="Please try again.", color=0xff0000) 
                 await embedtoedit.edit(embed=embed) 
-    except:
-        await message.channel.send("Unexpected error:" + str(sys.exc_info()[0]))
+    except Exception as e:
+        await message.channel.send("Unexpected error: " + str(e))
 
-client.run('token')
+
+
+client.run('no')
 
 
 
